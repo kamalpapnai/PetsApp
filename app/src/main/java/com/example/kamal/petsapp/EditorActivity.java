@@ -153,7 +153,7 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
                 return true;
             // Respond to a click on the "Delete" menu option
             case R.id.action_delete:
-                // Do nothing for now
+                showDeleteConfirmationDialog();
                 return true;
             // Respond to a click on the "Up" arrow button in the app bar
             case android.R.id.home:
@@ -163,21 +163,6 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
                     return true;
                 }
 
-                // Otherwise if there are unsaved changes, setup a dialog to warn the user.
-                // Create a click listener to handle the user confirming that
-                // changes should be discarded.
-
-                DialogInterface.OnClickListener discardButtonClickListener = new DialogInterface.OnClickListener()
-                {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                // User clicked "Discard" button, navigate to parent activity.
-                                NavUtils.navigateUpFromSameTask(EditorActivity.this);
-                                Log.d("key","InHomeArea");
-                            }
-                        };
-
-                // Show a dialog that notifies the user they have unsaved changes
                 showUnsavedChangesDialog();
                 return true;
         }
@@ -222,6 +207,42 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         alertDialog.show();
     }
 
+    private void showDeleteConfirmationDialog(){
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage(R.string.delete_dialog_msg);
+
+        builder.setPositiveButton(R.string.delete, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+               deletePet();
+            }
+        });
+
+        builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                if(dialog!=null)
+                    dialog.dismiss();
+            }
+        });
+
+
+        AlertDialog alertDialog = builder.create();
+        alertDialog.show();
+    }
+
+    private void deletePet() {
+
+        int rowDeletedId=getContentResolver().delete(getPetUri,null,null);
+        if(rowDeletedId!=-1){
+            Toast.makeText(this, "We will miss You:"+mNameEditText.getText(), Toast.LENGTH_LONG).show();
+        }else{
+            Toast.makeText(this,"Error in Deleting",Toast.LENGTH_SHORT).show();
+        }
+        finish();
+    }
+
     @Override
     public void onBackPressed() {
         // If the pet hasn't changed, continue with handling back button press
@@ -230,24 +251,6 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
             return;
         }
 
-        // Otherwise if there are unsaved changes, setup a dialog to warn the user.
-        // Create a click listener to handle the user confirming that changes should be discarded.
-
-
-        //this is just an interface for the discarded button which is set up in showUnsavedChangesDailog method as setPositiveButton
-//        DialogInterface.OnClickListener discardButtonClickListener = new DialogInterface.OnClickListener() {
-//                    @Override
-//                    public void onClick(DialogInterface dialogInterface, int i) {
-//                        // User clicked "Discard" button, close the current activity.
-//                        Log.d("key","OnBackPressedArea");
-//                        finish();
-//                    }
-//                };
-
-        // Show dialog that there are unsaved changes
-        Log.d("key","OnBackPressed2Area");
-
-        //interface for discarded button i being passed to the called method
         showUnsavedChangesDialog();
     }
 
