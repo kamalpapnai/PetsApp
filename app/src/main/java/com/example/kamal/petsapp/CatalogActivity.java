@@ -38,7 +38,8 @@ public class CatalogActivity extends AppCompatActivity implements LoaderManager.
     private PetDbHelper mDbHelper;
      SQLiteDatabase db;
     SQLiteDatabase db2write;
-
+     PetCursorAdapter petCursorAdapter;
+     private static final int PET_LOADER=0;
 
 
 
@@ -58,43 +59,19 @@ public class CatalogActivity extends AppCompatActivity implements LoaderManager.
             }
         });
 
-        mDbHelper=new PetDbHelper(this);
-        displayDatabaseInfo();
-
-    }
 
 
-//
-private void displayDatabaseInfo() {
-    // Define a projection that specifies which columns from the database
-    // you will actually use after this query.
+        ListView petItem_view = (ListView) findViewById(R.id.list_petitem);
 
-    SQLiteDatabase database=mDbHelper.getReadableDatabase();
-    String[] projection = {
-            PetsEntry._ID,
-            PetsEntry.PET_NAME,
-            PetsEntry.PET_BREED,
-            PetsEntry.PET_GENDER,
-            PetsEntry.PET_WEIGHT };
-
-
-   Cursor cursor=getContentResolver().query(PetsEntry.CONTENT_URI,projection,null,null,null);
-
-
-        ListView petItem_view = (ListView)findViewById(R.id.list_petitem);
-
-        View emptyView = (View)findViewById(R.id.empty_view);
+        View emptyView = (View) findViewById(R.id.empty_view);
         petItem_view.setEmptyView(emptyView);
 
-        PetCursorAdapter petCursorAdapter = new PetCursorAdapter(this,cursor);
 
+        petCursorAdapter = new PetCursorAdapter(this,null);
         petItem_view.setAdapter(petCursorAdapter);
 
-
-}
-
-
-
+        getLoaderManager().initLoader(PET_LOADER,null,this);
+    }
 
 
     @Override
@@ -110,7 +87,6 @@ private void displayDatabaseInfo() {
             // Respond to a click on the "Insert dummy data" menu option
             case R.id.action_insert_dummy_data:
                 insertDummyPet();
-                displayDatabaseInfo();
                 return true;
             // Respond to a click on the "Delete all entries" menu option
             case R.id.action_delete_all_entries:
@@ -124,7 +100,6 @@ private void displayDatabaseInfo() {
     @Override
     protected void onStart() {
         super.onStart();
-        displayDatabaseInfo();
 
     }
 
@@ -140,16 +115,26 @@ private void displayDatabaseInfo() {
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        return null;
+
+        //query will be done in the background
+        String[] projection = {
+                PetsEntry._ID,
+                PetsEntry.PET_NAME,
+                PetsEntry.PET_BREED};
+       return new CursorLoader(this,PetsEntry.CONTENT_URI,projection,null,null,null);
+
     }
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        //update the view with the new cursor
+        petCursorAdapter.swapCursor(data);
 
     }
 
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
+        petCursorAdapter.swapCursor(null);
 
     }
 }
