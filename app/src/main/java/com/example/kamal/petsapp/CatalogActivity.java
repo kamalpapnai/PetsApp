@@ -1,28 +1,46 @@
 package com.example.kamal.petsapp;
 
+import android.app.LoaderManager;
+import android.content.ContentProvider;
+import android.content.ContentProviderClient;
+import android.content.ContentResolver;
 import android.content.ContentValues;
+import android.content.CursorLoader;
 import android.content.Intent;
+import android.content.Loader;
 import android.content.PeriodicSync;
 import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.kamal.petsapp.data.PetDbHelper;
+import com.example.kamal.petsapp.data.PetProvider;
+import com.example.kamal.petsapp.data.PetsContract;
 import com.example.kamal.petsapp.data.PetsContract.PetsEntry;
 
-public class CatalogActivity extends AppCompatActivity {
+import java.util.List;
+
+public class CatalogActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor>{
 
     private PetDbHelper mDbHelper;
-    private SQLiteDatabase db;
-    private SQLiteDatabase db2write;
+     SQLiteDatabase db;
+    SQLiteDatabase db2write;
+
+
+
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -40,61 +58,42 @@ public class CatalogActivity extends AppCompatActivity {
             }
         });
 
+        mDbHelper=new PetDbHelper(this);
         displayDatabaseInfo();
+
     }
 
 
-        private void displayDatabaseInfo(){
-            // To access our database, we instantiate our subclass of SQLiteOpenHelper
-            // and pass the context, which is the current activity.
-             mDbHelper = new PetDbHelper(this);
+//
+private void displayDatabaseInfo() {
+    // Define a projection that specifies which columns from the database
+    // you will actually use after this query.
 
-            // Create and/or open a database to read from it
-            db = mDbHelper.getReadableDatabase();
-
-            // Perform this raw SQL query "SELECT * FROM pets"
-            // to get a Cursor that contains all rows from the pets table.
-
-
-            //columns i want to get displayed
-            String[] projection = {PetsEntry.PET_ID,
-                                   PetsEntry.PET_NAME,
-                                   PetsEntry.PET_BREED,
-                                   PetsEntry.PET_GENDER,
-                                   PetsEntry.PET_WEIGHT};
-
-            Cursor cursor = db.query(PetsEntry.TABLE_NAME,projection,null,null,null,null,null);
-            try {
-                // Display the number of rows in the Cursor (which reflects the number of rows in the
-                // pets table in the database).
-                TextView displayView = (TextView) findViewById(R.id.text_view_pet);
-                displayView.setText("Number of rows in pets database table: " + cursor.getCount());
-                displayView.append("\n"+PetsEntry.PET_ID+"   "+PetsEntry.PET_NAME+"     "+PetsEntry.PET_BREED+"     "+
-                        PetsEntry.PET_GENDER+"     "+PetsEntry.PET_WEIGHT);
+    SQLiteDatabase database=mDbHelper.getReadableDatabase();
+    String[] projection = {
+            PetsEntry._ID,
+            PetsEntry.PET_NAME,
+            PetsEntry.PET_BREED,
+            PetsEntry.PET_GENDER,
+            PetsEntry.PET_WEIGHT };
 
 
-                int idColumnIndex  = cursor.getColumnIndex(PetsEntry.PET_ID);
-                int nameColumnIndex=cursor.getColumnIndex(PetsEntry.PET_NAME);
-                int breedColumnIndex=cursor.getColumnIndex(PetsEntry.PET_BREED);
-                int genderColumnIndex=cursor.getColumnIndex(PetsEntry.PET_GENDER);
-                int weightColumnIndex=cursor.getColumnIndex(PetsEntry.PET_WEIGHT);
+   Cursor cursor=getContentResolver().query(PetsEntry.CONTENT_URI,projection,null,null,null);
 
-                while (cursor.moveToNext()){
 
-                    int id = cursor.getInt(idColumnIndex);
-                    String name=cursor.getString(nameColumnIndex);
-                    String breed = cursor.getString(breedColumnIndex);
-                    int gender=cursor.getInt(genderColumnIndex);
-                    int weight=cursor.getInt(weightColumnIndex);
+        ListView petItem_view = (ListView)findViewById(R.id.list_petitem);
 
-                    displayView.append("\n"+id+"    "+name+"    "+breed+"    "+gender+"     "+weight);
-                }
-            } finally {
-                // Always close the cursor when you're done reading from it. This releases all its
-                // resources and makes it invalid.
-                cursor.close();
-            }
-        }
+        View emptyView = (View)findViewById(R.id.empty_view);
+        petItem_view.setEmptyView(emptyView);
+
+        PetCursorAdapter petCursorAdapter = new PetCursorAdapter(this,cursor);
+
+        petItem_view.setAdapter(petCursorAdapter);
+
+
+}
+
+
 
 
 
@@ -115,7 +114,7 @@ public class CatalogActivity extends AppCompatActivity {
                 return true;
             // Respond to a click on the "Delete all entries" menu option
             case R.id.action_delete_all_entries:
-                // Do nothing for now
+
                 return true;
         }
         return super.onOptionsItemSelected(item);
@@ -126,27 +125,31 @@ public class CatalogActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         displayDatabaseInfo();
+
     }
 
     private void insertDummyPet() {
+         ContentValues contentValues = new ContentValues();
+         contentValues.put(PetsEntry.PET_NAME,"Toto");
+         contentValues.put(PetsEntry.PET_BREED,"Terrier");
+         contentValues.put(PetsEntry.PET_GENDER,PetsEntry.GENDER_MALE);
+         contentValues.put(PetsEntry.PET_WEIGHT,6);
 
-        //content values to keep data in form of key and value pair
-        ContentValues dummyDataValues = new ContentValues();
-        dummyDataValues.put(PetsEntry.PET_NAME,"Toto");
-        dummyDataValues.put(PetsEntry.PET_BREED,"Terrier");
-        dummyDataValues.put(PetsEntry.PET_GENDER,PetsEntry.GENDER_MALE);
-        dummyDataValues.put(PetsEntry.PET_WEIGHT,"7");
+         Uri mNewUri = getContentResolver().insert(PetsEntry.CONTENT_URI,contentValues);
+    }
 
-        //db2write database object to access write functionality in out PetsData database
-        db2write=mDbHelper.getWritableDatabase();
+    @Override
+    public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+        return null;
+    }
 
-        //newPetId is the value retturned by insert which indicates id of the new rw inserted
-        long newPetId=db2write.insert(PetsEntry.TABLE_NAME,null,dummyDataValues);
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
 
-        //f unable to insert the returned id is -1
-        if(newPetId==-1){
-            Toast.makeText(this,"Dummy Data Not Inserted",Toast.LENGTH_SHORT).show();
-        }
+    }
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
 
     }
 }

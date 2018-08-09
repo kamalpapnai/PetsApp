@@ -2,11 +2,13 @@ package com.example.kamal.petsapp;
 
 import android.content.ContentValues;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -111,27 +113,25 @@ public class EditorActivity extends AppCompatActivity {
     private void insertPet() {
 
         String name = mNameEditText.getText().toString().trim();
-        String breed=mBreedEditText.getText().toString().trim();
-        String weight=mWeightEditText.getText().toString().trim();
+        String breed = mBreedEditText.getText().toString().trim();
+        String weight = mWeightEditText.getText().toString().trim();
 
         //converting string weight to int
         int weightPet = Integer.parseInt(weight);
 
         ContentValues userValues = new ContentValues();
-        userValues.put(PetsEntry.PET_NAME,name);
-        userValues.put(PetsEntry.PET_BREED,breed);
-        userValues.put(PetsEntry.PET_GENDER,mGender);
-        userValues.put(PetsEntry.PET_WEIGHT,weightPet);
+        userValues.put(PetsEntry.PET_NAME, name);
+        userValues.put(PetsEntry.PET_BREED, breed);
+        userValues.put(PetsEntry.PET_GENDER, mGender);
+        userValues.put(PetsEntry.PET_WEIGHT, weightPet);
 
-        PetDbHelper petDbHelper = new PetDbHelper(this);
-        SQLiteDatabase db = petDbHelper.getWritableDatabase();
+        Uri newRowUri = getContentResolver().insert(PetsEntry.CONTENT_URI, userValues);
+        Log.d("key", String.valueOf(newRowUri));
 
-        long row_id=db.insert(PetsEntry.TABLE_NAME,null,userValues);
-        if(row_id==-1){
-            Toast.makeText(this, "Pet Not Inserted", Toast.LENGTH_SHORT).show();
-        }
-        else{
-            Toast.makeText(this,"Pet Saved with id:"+row_id,Toast.LENGTH_SHORT).show();
+        if (newRowUri == null) {
+            Toast.makeText(this, "Pet Data not inserted", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "Pet Data Inserted", Toast.LENGTH_SHORT).show();
         }
 
     }
