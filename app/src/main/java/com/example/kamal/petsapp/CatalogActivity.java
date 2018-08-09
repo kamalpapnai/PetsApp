@@ -22,6 +22,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -39,7 +40,8 @@ public class CatalogActivity extends AppCompatActivity implements LoaderManager.
      SQLiteDatabase db;
     SQLiteDatabase db2write;
      PetCursorAdapter petCursorAdapter;
-     private static final int PET_LOADER=0;
+     public static final int PET_LOADER=0;
+     public static final String intentExtra="PetID";
 
 
 
@@ -69,6 +71,23 @@ public class CatalogActivity extends AppCompatActivity implements LoaderManager.
 
         petCursorAdapter = new PetCursorAdapter(this,null);
         petItem_view.setAdapter(petCursorAdapter);
+
+        petItem_view.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                //here parent is the adapter view
+                //view is the single item which is clicked
+                //position is the position of the view in the listview
+                //id is the id of our item clicked
+                Log.d("key",String.valueOf(id)+String.valueOf(position));
+
+                Uri ClickPetUri = Uri.withAppendedPath(PetsEntry.CONTENT_URI,String.valueOf(id));
+
+                Intent intent = new Intent(CatalogActivity.this,EditorActivity.class);
+                intent.putExtra(intentExtra,ClickPetUri.toString());
+                startActivity(intent);
+            }
+        });
 
         getLoaderManager().initLoader(PET_LOADER,null,this);
     }
